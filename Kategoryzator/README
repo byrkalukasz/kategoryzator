@@ -1,0 +1,20 @@
+endpoint /predict
+endpoint do zapisywania i obserwatowa /predict_log
+
+//Predict
+{
+  "nazwa": "23%",
+  "typ_pozycji": "EXPENDITURE",
+  "company_id": "7175016",
+  "accounting_type": "KPIR"
+}
+//Predict_log
+{
+  "nazwa": "23%",
+  "typ_pozycji": "EXPENDITURE",
+  "company_id": "7175016",
+  "accounting_type": "KPIR",
+  "raw": Tutaj dane o kategorii dla konkretnej pozycji
+}
+accounting_type = KPIR/ADVANCE
+typ_pozycji = EXPENDITURE/INCOME

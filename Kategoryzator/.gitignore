@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Virtual environments
+.venv/
+.kategoryzator/
+
+# Local env/secrets
+.env
+.env.*
+!.env.aws.example
+
+# Artifacts
+logs/
+plots/
+raporty_xgb/
+dane/
+KPIR_kerras/
+ADVANCED_kerras/
+KPIR_xgboost/
+ADVANCED_xgboost/
+modele_xgb/
+
+# Editor/OS
+.vscode/
+.DS_Store

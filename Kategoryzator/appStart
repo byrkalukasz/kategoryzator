@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Backward-compatible entrypoint. Preferred script location:
+# scripts/run_docker.sh
+bash scripts/run_docker.sh

@@ -1,0 +1,44 @@
+FROM python:3.12-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    TF_CPP_MIN_LOG_LEVEL=2 \
+    CUDA_VISIBLE_DEVICES=-1 \
+    KERAS_BACKEND=tensorflow \
+    # Stabilniejsza praca TF/BLAS na małej liczbie vCPU:
+    OMP_NUM_THREADS=2 \
+    TF_NUM_INTRAOP_THREADS=2 \
+    TF_NUM_INTEROP_THREADS=2
+
+# (opcjonalnie) mniej RAM kosztem trochę CPU:
+# ENV TF_ENABLE_ONEDNN_OPTS=0
+
+# XGBoost potrzebuje libgomp1
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY . /app
+
+# Piny = takie jak w treningu. Nie instalujemy ręcznie numpy –
+# pozwalamy resolverowi dobrać zgodną wersję pod TF/pandas.
+RUN python -m pip install --upgrade pip setuptools wheel --no-cache-dir && \
+    pip install --no-cache-dir --prefer-binary -r req.txt
+
+# Logi / użytkownik nie-root
+ENV PREDICT_LOG_PATH=/app/logs/predictions.jsonl
+RUN mkdir -p /app/logs && \
+    adduser --disabled-password --gecos "" appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+
+# FastAPI przez gunicorn + uvicorn worker
+CMD ["gunicorn", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120", "categoryzer_api:app"]
