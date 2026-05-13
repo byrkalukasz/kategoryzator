@@ -15,10 +15,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # (opcjonalnie) mniej RAM kosztem trochę CPU:
 # ENV TF_ENABLE_ONEDNN_OPTS=0
 
-# XGBoost potrzebuje libgomp1 i openssl dla HTTPS
+# XGBoost potrzebuje libgomp1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
-    openssl \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -38,6 +37,8 @@ USER appuser
 
 EXPOSE 8000
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+
 # FastAPI przez gunicorn + uvicorn worker
-CMD ["gunicorn", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", \
-    "-b", "0.0.0.0:8000", "--timeout", "120", "categoryzer_api:app"]
+CMD ["gunicorn", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120", "categoryzer_api:app"]

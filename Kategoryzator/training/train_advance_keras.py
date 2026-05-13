@@ -55,6 +55,10 @@ X_pozycja = encoder_pozycja.fit_transform(data[['typ_pozycji']])
 user_ids, user_id_index = np.unique(data['company_id'], return_inverse=True)
 num_users = len(user_ids)
 
+# === Tworzenie folderów wyjściowych ===
+os.makedirs("ADVANCED_kerras", exist_ok=True)
+os.makedirs("plots", exist_ok=True)
+
 # === Pętla po kolumnach ===
 for output_column in output_columns:
     print(f"\n==================== Trenowanie dla kolumny: {output_column} ====================")
@@ -62,6 +66,10 @@ for output_column in output_columns:
     data[output_column] = data[output_column].fillna("BRAK")
     encoder_y = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
     y = encoder_y.fit_transform(data[[output_column]])
+
+    if y.shape[1] < 2:
+        print(f"  ⚠️  Pomijam '{output_column}' — tylko 1 klasa w danych treningowych.")
+        continue
 
     X_train_nazwa, X_test_nazwa, \
     X_train_typ, X_test_typ, \
@@ -111,7 +119,7 @@ for output_column in output_columns:
 
     callbacks = [
         EarlyStopping(monitor='val_accuracy', patience=60, min_delta=0.001, restore_best_weights=True),
-        ModelCheckpoint(f"model_{output_column}_advance.keras", save_best_only=True),
+        ModelCheckpoint(f"ADVANCED_kerras/model_{output_column}_advance.keras", save_best_only=True),
         ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5)
     ]
 
@@ -146,7 +154,7 @@ for output_column in output_columns:
     )
 
     if output_column == 'metoda_rozliczenia_podatku':
-        model.save("model_medota_rozliczenia_podatku_advance.keras")
+        model.save("ADVANCED_kerras/model_medota_rozliczenia_podatku_advance.keras")
 
     # === Ewaluacja ===
     pred = model.predict(val_dataset)
@@ -154,7 +162,7 @@ for output_column in output_columns:
     y_true = np.argmax(y_test, axis=1)
     print("\n📊 Classification report:")
     labels_used = np.unique(y_true)
-    class_names = encoder_y.categories_[0][labels_used]
+    class_names = [str(c) for c in encoder_y.categories_[0][labels_used]]
     print(classification_report(y_true, y_pred, labels=labels_used, target_names=class_names))
 
     # === Wykresy ===

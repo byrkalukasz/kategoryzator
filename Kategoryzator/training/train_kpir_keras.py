@@ -12,6 +12,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLRO
 from tensorflow.keras.initializers import lecun_normal
 from tensorflow.keras.optimizers import Adam
 import joblib
+import os
 
 # === Wczytaj dane ===
 data = pd.read_csv("dane/dane_ai.csv", encoding='ISO-8859-2', sep=';')
@@ -78,6 +79,10 @@ X_train_uid = np.array([user_id_map.get(uid, 0) for uid in train_data['company_i
 X_test_uid = np.array([user_id_map.get(uid, 0) for uid in test_data['company_id']], dtype=np.int32)
 num_users = len(user_ids_train) + 1
 
+# === Tworzenie folderów wyjściowych ===
+os.makedirs("KPIR_kerras", exist_ok=True)
+os.makedirs("plots", exist_ok=True)
+
 # === Pętla po kolumnach ===
 for output_column in output_columns:
     print(f"\n==================== Trenowanie dla kolumny: {output_column} ====================")
@@ -87,6 +92,10 @@ for output_column in output_columns:
     encoder_y = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
     y_train = encoder_y.fit_transform(train_data[[output_column]])
     y_test = encoder_y.transform(test_data[[output_column]])
+
+    if y_train.shape[1] < 2:
+        print(f"  ⚠️  Pomijam '{output_column}' — tylko 1 klasa w danych treningowych.")
+        continue
 
     # === MODELE ===
     input_nazwa = Input(shape=(X_train_nazwa.shape[1],), name="input_nazwa")
@@ -148,7 +157,7 @@ for output_column in output_columns:
 
         callbacks = [
             EarlyStopping(monitor='val_accuracy', patience=20, min_delta=0.001, restore_best_weights=True),
-            ModelCheckpoint(f"model_{output_column}.keras", save_best_only=True),
+            ModelCheckpoint(f"KPIR_kerras/model_{output_column}.keras", save_best_only=True),
             ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3)
         ]
 
@@ -177,7 +186,7 @@ for output_column in output_columns:
 
         callbacks = [
             EarlyStopping(monitor='val_accuracy', patience=20, min_delta=0.001, restore_best_weights=True),
-            ModelCheckpoint(f"model_{output_column}.keras", save_best_only=True),
+            ModelCheckpoint(f"KPIR_kerras/model_{output_column}.keras", save_best_only=True),
             ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3)
         ]
 
@@ -206,7 +215,7 @@ for output_column in output_columns:
 
         callbacks = [
             EarlyStopping(monitor='val_accuracy', patience=20, min_delta=0.001, restore_best_weights=True),
-            ModelCheckpoint(f"model_{output_column}.keras", save_best_only=True),
+            ModelCheckpoint(f"KPIR_kerras/model_{output_column}.keras", save_best_only=True),
             ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3)
         ]
 
@@ -235,7 +244,7 @@ for output_column in output_columns:
 
         callbacks = [
             EarlyStopping(monitor='val_accuracy', patience=20, min_delta=0.001, restore_best_weights=True),
-            ModelCheckpoint(f"model_{output_column}.keras", save_best_only=True),
+            ModelCheckpoint(f"KPIR_kerras/model_{output_column}.keras", save_best_only=True),
             ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3)
         ]
 
@@ -264,7 +273,7 @@ for output_column in output_columns:
 
         callbacks = [
             EarlyStopping(monitor='val_accuracy', patience=20, min_delta=0.001, restore_best_weights=True),
-            ModelCheckpoint(f"model_{output_column}.keras", save_best_only=True),
+            ModelCheckpoint(f"KPIR_kerras/model_{output_column}.keras", save_best_only=True),
             ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3)
         ]
 
@@ -293,7 +302,7 @@ for output_column in output_columns:
 
         callbacks = [
             EarlyStopping(monitor='val_accuracy', patience=20, min_delta=0.001, restore_best_weights=True),
-            ModelCheckpoint(f"model_{output_column}.keras", save_best_only=True),
+            ModelCheckpoint(f"KPIR_kerras/model_{output_column}.keras", save_best_only=True),
             ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3)
         ]
 
@@ -332,7 +341,7 @@ for output_column in output_columns:
     y_true = np.argmax(y_test, axis=1)
     print("Classification report:")
     labels_used = np.unique(y_true)
-    class_names = encoder_y.categories_[0][labels_used]
+    class_names = [str(c) for c in encoder_y.categories_[0][labels_used]]
     print(classification_report(y_true, y_pred, labels=labels_used, target_names=class_names))
 
     # === Wykresy ===

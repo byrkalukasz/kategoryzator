@@ -24,7 +24,7 @@ typ_column = data.columns[4]
 
 # === Czyszczenie danych
 for col in ['company_id', 'nazwa', typ_column, 'typ_pozycji']:
-    data[col] = data[col].astype(str).str.strip()
+    data[col] = data[col].fillna('').astype(str).str.strip()
 data = data[data['nazwa'].str.strip().astype(bool)]
 data = data[data[typ_column] == 'BOOK']
 
@@ -55,8 +55,13 @@ joblib.dump(le_uid, f"encoder_uid.pkl")
 X = hstack([X_nazwa, X_typ, X_poz, X_uid])
 
 # === Tworzenie folderów
-os.makedirs("modele_xgb", exist_ok=True)
+os.makedirs("KPIR_xgboost", exist_ok=True)
 os.makedirs("raporty_xgb", exist_ok=True)
+
+# Zapisz enkodery do folderu modeli (wymagane przez inference_registry)
+joblib.dump(encoder_typ, "KPIR_xgboost/encoder_typ.pkl")
+joblib.dump(encoder_poz, "KPIR_xgboost/encoder_pozycja.pkl")
+joblib.dump(le_uid, "KPIR_xgboost/encoder_uid.pkl")
 
 # === Trening dla każdej kolumny
 for output_column in output_columns:
@@ -76,10 +81,15 @@ for output_column in output_columns:
     le_y = LabelEncoder()
     y_train_encoded = le_y.fit_transform(y_train_raw)
     y_test_encoded = le_y.transform(y_test_raw[y_test_raw.isin(le_y.classes_)])
-    joblib.dump(le_y, f"modele_xgb/encoder_y_{output_column}.pkl")
+    joblib.dump(le_y, f"KPIR_xgboost/encoder_y_{output_column}.pkl")
+
+    # === Guard: pomin kolumny z < 2 klasami
+    class_labels = np.unique(y_train_encoded)
+    if len(class_labels) < 2:
+        print(f"  ⚠️  Pomijam '{output_column}' — tylko {len(class_labels)} klasa w danych treningowych.")
+        continue
 
     # === Compute class weights manually
-    class_labels = np.unique(y_train_encoded)
     class_weights = compute_class_weight(class_weight='balanced', classes=class_labels, y=y_train_encoded)
     class_weight_dict = {i: w for i, w in zip(class_labels, class_weights)}
 
@@ -98,7 +108,6 @@ for output_column in output_columns:
     model = XGBClassifier(
         objective=objective_type,
         eval_metric=eval_metric,
-        use_label_encoder=False,
         max_depth=6,
         learning_rate=0.1,
         n_estimators=300,
@@ -110,7 +119,7 @@ for output_column in output_columns:
     )
 
     model.fit(X_train, y_train_encoded, sample_weight=sample_weight)
-    joblib.dump(model, f"modele_xgb/model_{output_column}.pkl")
+    joblib.dump(model, f"KPIR_xgboost/model_{output_column}.pkl")
 
     # === Ewaluacja
     y_pred = model.predict(X_test[y_test_raw.isin(le_y.classes_)])

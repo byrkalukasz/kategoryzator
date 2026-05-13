@@ -17,6 +17,12 @@ __pycache__/
 # Artifacts
 logs/
 plots/
+vectorizer_*.pkl
+!vectorizer_nazwa.pkl
+!vectorizer_nazwa_nn.pkl
+encoder_*.pkl
+tuning_results_*.json
+tuning_summary_all_columns.json
 raporty_xgb/
 dane/
 KPIR_kerras/
