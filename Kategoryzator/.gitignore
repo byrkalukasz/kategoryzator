@@ -31,6 +31,10 @@ KPIR_xgboost/
 ADVANCED_xgboost/
 modele_xgb/
 
+# Generatory raportów i wynikowe pliki raportów
+raport_koncowy_*.docx
+raport_koncowy_*.pdf
+
 # Editor/OS
 .vscode/
 .DS_Store
